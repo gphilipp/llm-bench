@@ -325,29 +325,44 @@ def print_comparison_table(summaries: list[ModelSummary]) -> None:
     print()
 
 
+def fmt_elapsed(seconds: float) -> str:
+    if seconds >= 60:
+        m, s = divmod(int(seconds), 60)
+        return f"{m}m {s:02d}s"
+    return f"{seconds:.1f}s"
+
+
 def benchmark_model(
     host: str,
     model: str,
     prompt_names: list[str],
     num_predict: int,
+    verbose: bool,
     show_responses: bool,
 ) -> ModelSummary:
     summary = ModelSummary(model=model, results=[], errors=[])
 
     for name in prompt_names:
         prompt = PROMPTS[name]
-        print(f"    {name:<12}", end="", flush=True)
+        if verbose:
+            print(f"    {name:<12}", end="", flush=True)
         try:
             result = run_single(host, model, name, prompt, num_predict)
             summary.results.append(result)
-            print(f" {result.gen_tokens_per_sec:>6.1f} tok/s   TTFT {fmt_ms(result.ttft_ms)}")
-            if show_responses:
-                preview = result.full_response[:300]
-                suffix = "..." if len(result.full_response) > 300 else ""
-                print(f"              → {preview}{suffix}\n")
+            if verbose:
+                print(f" {result.gen_tokens_per_sec:>6.1f} tok/s   TTFT {fmt_ms(result.ttft_ms)}")
+                if show_responses:
+                    preview = result.full_response[:300]
+                    suffix = "..." if len(result.full_response) > 300 else ""
+                    print(f"              → {preview}{suffix}\n")
+            else:
+                print(".", end="", flush=True)
         except Exception as e:
             summary.errors.append(f"{name}: {e}")
-            print(f" ERROR: {e}")
+            if verbose:
+                print(f" ERROR: {e}")
+            else:
+                print("E", end="", flush=True)
 
     return summary
 
@@ -367,7 +382,8 @@ def main() -> None:
     )
     parser.add_argument("--num-predict", type=int, default=GENERATION_TOKENS,
                         help=f"Max tokens to generate per prompt (default: {GENERATION_TOKENS})")
-    parser.add_argument("--show-responses", action="store_true", help="Print model responses")
+    parser.add_argument("--verbose", action="store_true", help="Print per-prompt speed and TTFT while running")
+    parser.add_argument("--show-responses", action="store_true", help="Print model responses (implies --verbose)")
     parser.add_argument("--pull", action="store_true", help="Pull missing models before benchmarking")
     parser.add_argument("--list", action="store_true", help="List available models and exit")
     args = parser.parse_args()
@@ -417,19 +433,32 @@ def main() -> None:
     print(f"Max tokens  : {args.num_predict}")
     print(f"Total runs  : {total_runs}\n")
 
+    verbose = args.verbose or args.show_responses
     all_summaries: list[ModelSummary] = []
 
     for i, model in enumerate(runnable, 1):
-        print(f"[{i}/{len(runnable)}] {model}")
-        print(f"  {'Prompt':<12}  {'Speed':>10}   {'TTFT':>10}")
-        print(f"  {'-'*40}")
-        summary = benchmark_model(host, model, args.prompts, args.num_predict, args.show_responses)
+        label = f"[{i}/{len(runnable)}] {model}"
+        if verbose:
+            print(label)
+            print(f"  {'Prompt':<12}  {'Speed':>10}   {'TTFT':>10}")
+            print(f"  {'-'*40}")
+        else:
+            print(f"{label}  ", end="", flush=True)
+
+        model_start = time.perf_counter()
+        summary = benchmark_model(host, model, args.prompts, args.num_predict, verbose, args.show_responses)
+        elapsed = time.perf_counter() - model_start
         all_summaries.append(summary)
-        if summary.results:
-            tps_vals = [r.gen_tokens_per_sec for r in summary.results]
-            print(f"  → avg {statistics.mean(tps_vals):.1f} tok/s  "
-                  f"avg TTFT {fmt_ms(summary.avg_ttft_ms)}")
-        print()
+
+        if verbose:
+            if summary.results:
+                print(f"  → avg {summary.avg_gen_tps:.1f} tok/s  avg TTFT {fmt_ms(summary.avg_ttft_ms)}")
+            print()
+        else:
+            tail = f"  {fmt_elapsed(elapsed)}"
+            if summary.results:
+                tail += f"  — avg {summary.avg_gen_tps:.1f} tok/s  avg TTFT {fmt_ms(summary.avg_ttft_ms)}"
+            print(tail)
 
     if len(all_summaries) > 1:
         print_comparison_table(all_summaries)
