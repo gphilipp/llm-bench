@@ -1,4 +1,4 @@
-# qwen-benchmark
+# LLM Benchmark
 
 Benchmark local LLMs running in [Ollama](https://ollama.com). Measures **generation speed** (tok/s), **time to first token** (TTFT), and **prefill speed** across five prompt categories: `short`, `medium`, `long`, `reasoning`, and `code`.
 
