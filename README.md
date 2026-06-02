@@ -35,6 +35,15 @@ python3 benchmark.py --show-responses
 python3 benchmark.py --host http://192.168.1.10:11434
 ```
 
+## Prompts
+
+| Name | Description |
+|---|---|
+| `short` | One-word answer — baseline latency |
+| `medium` | Technical explanation — typical chat |
+| `long` | Code + explanation — extended generation |
+| `reasoning` | Step-by-step problem — chain-of-thought |
+| `code` | Function implementation — coding assistant |
 ## Sample output
 
 ```
@@ -112,21 +121,3 @@ qwen2.5-coder:14b         3.2         2.3         6.6      10.4 s            72.
 ---------------------------------------------------------------------------------------
 ```
 
-### Notes on these results
-
-Machine: **Intel i7-9750H / 64 GB RAM / RTX 2070 8 GB VRAM** running Ollama on Windows, benchmarked from WSL2.
-
-- **phi:latest** (3B) runs fully on GPU → very fast generation (70–86 tok/s), but the `short` prompt has a high TTFT (32 s) because it's the first run and the model is loading cold.
-- **qwen2.5-coder:7b** fits in VRAM → consistent ~9 tok/s generation and sub-second TTFT after the cold start.
-- **qwen3:30b-a3b** and **qwen2.5-coder:14b** exceed 8 GB VRAM and spill to CPU RAM → low generation speed and high TTFT. The first prompt per model always includes model-load time.
-- High `short` TTFTs across the board (10–45 s) are the model cold-start; subsequent prompts on the same model are much faster.
-
-## Prompts
-
-| Name | Description |
-|---|---|
-| `short` | One-word answer — baseline latency |
-| `medium` | Technical explanation — typical chat |
-| `long` | Code + explanation — extended generation |
-| `reasoning` | Step-by-step problem — chain-of-thought |
-| `code` | Function implementation — coding assistant |
