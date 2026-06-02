@@ -11,7 +11,16 @@ from typing import Iterator
 
 import requests
 
-DEFAULT_HOST = "http://172.26.112.1:11434"
+def _default_host() -> str:
+    try:
+        with open("/proc/version") as f:
+            if "microsoft" in f.read().lower():
+                return "http://172.26.112.1:11434"
+    except OSError:
+        pass
+    return "http://localhost:11434"
+
+DEFAULT_HOST = _default_host()
 
 DEFAULT_MODELS = [
     "qwen3:30b-a3b",
@@ -272,12 +281,10 @@ def main() -> None:
                         help=f"Max tokens to generate per prompt (default: {GENERATION_TOKENS})")
     parser.add_argument("--show-responses", action="store_true", help="Print model responses")
     parser.add_argument("--pull", action="store_true", help="Pull missing models before benchmarking")
-    parser.add_argument("--localhost", action="store_true",
-                        help="Use localhost:11434 (Ollama running in WSL)")
     parser.add_argument("--list", action="store_true", help="List available models and exit")
     args = parser.parse_args()
 
-    host = "http://localhost:11434" if args.localhost else args.host
+    host = args.host
     models = [args.model] if args.model else args.models
 
     # Connectivity check
@@ -285,7 +292,7 @@ def main() -> None:
         available = get_available_models(host)
     except Exception as e:
         print(f"Error: cannot reach Ollama at {host}\n  {e}")
-        print("\nStart Ollama on Windows with:  $env:OLLAMA_HOST='0.0.0.0'; ollama serve")
+        print("\nMake sure Ollama is running. On Windows/WSL: $env:OLLAMA_HOST='0.0.0.0'; ollama serve")
         sys.exit(1)
 
     if args.list:
