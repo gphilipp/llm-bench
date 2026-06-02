@@ -3,13 +3,87 @@
 
 import argparse
 import json
+import os
+import platform
+import shutil
 import statistics
+import subprocess
 import sys
 import time
 from dataclasses import dataclass, field
 from typing import Iterator
 
 import requests
+
+def _cpu_name() -> str:
+    if platform.system() == "Darwin":
+        r = subprocess.run(["sysctl", "-n", "machdep.cpu.brand_string"], capture_output=True, text=True)
+        if r.returncode == 0:
+            return r.stdout.strip()
+    try:
+        with open("/proc/cpuinfo") as f:
+            for line in f:
+                if line.startswith("model name"):
+                    return line.split(":", 1)[1].strip()
+    except OSError:
+        pass
+    return platform.processor() or "unknown"
+
+
+def _total_ram() -> str:
+    if platform.system() == "Darwin":
+        r = subprocess.run(["sysctl", "-n", "hw.memsize"], capture_output=True, text=True)
+        if r.returncode == 0:
+            return f"{int(r.stdout.strip()) / 1024**3:.1f} GB"
+    try:
+        with open("/proc/meminfo") as f:
+            for line in f:
+                if line.startswith("MemTotal"):
+                    return f"{int(line.split()[1]) / 1024**2:.1f} GB"
+    except OSError:
+        pass
+    return "unknown"
+
+
+def _gpu_info() -> str:
+    if shutil.which("nvidia-smi"):
+        r = subprocess.run(
+            ["nvidia-smi", "--query-gpu=name,memory.total", "--format=csv,noheader,nounits"],
+            capture_output=True, text=True,
+        )
+        if r.returncode == 0:
+            lines = [l.strip() for l in r.stdout.strip().splitlines() if l.strip()]
+            return "; ".join(
+                f"{parts[0].strip()} ({int(parts[1].strip()) / 1024:.1f} GB)"
+                if len(parts := l.split(",")) == 2 else l
+                for l in lines
+            )
+    if platform.system() == "Darwin":
+        r = subprocess.run(
+            ["system_profiler", "SPDisplaysDataType", "-json"],
+            capture_output=True, text=True,
+        )
+        if r.returncode == 0:
+            try:
+                gpus = json.loads(r.stdout).get("SPDisplaysDataType", [])
+                if gpus:
+                    return gpus[0].get("sppci_model", "unknown")
+            except (json.JSONDecodeError, KeyError):
+                pass
+    return "unknown"
+
+
+def print_system_info() -> None:
+    cpu = _cpu_name()
+    threads = os.cpu_count() or "?"
+    ram = _total_ram()
+    gpu = _gpu_info()
+    os_str = f"{platform.system()} {platform.release()}"
+    print(f"OS          : {os_str}")
+    print(f"CPU         : {cpu} ({threads} threads)")
+    print(f"RAM         : {ram}")
+    print(f"GPU         : {gpu}")
+
 
 def _default_host() -> str:
     try:
@@ -294,6 +368,9 @@ def main() -> None:
         print(f"Error: cannot reach Ollama at {host}\n  {e}")
         print("\nMake sure Ollama is running. On Windows/WSL: $env:OLLAMA_HOST='0.0.0.0'; ollama serve")
         sys.exit(1)
+
+    print_system_info()
+    print()
 
     if args.list:
         print(f"Available models on {host}:")
