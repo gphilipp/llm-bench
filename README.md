@@ -40,18 +40,12 @@ python3 benchmark.py --host http://192.168.1.10:11434
 
 ## Sample output
 
-My old but trusty Zotac EN72070, beefed up with 64GB:
+My old, but trusty Zotac EN72070, beefed up with 64GB:
 ```
 OS          : Linux 6.6.87.2-microsoft-standard-WSL2
 CPU         : Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz (12 threads)
 RAM         : 63.9 GB
 GPU         : NVIDIA GeForce RTX 2070 (8.0 GB)
-
-[1/5] qwen3:30b-a3b       .....  4m 47s  — avg 8.1 tok/s  avg TTFT 42.6 s
-[2/5] qwen2.5-coder:14b   .....  10m 03s  — avg 3.2 tok/s  avg TTFT 4840 ms
-[3/5] qwen2.5-coder:7b    .....  2m 34s  — avg 12.6 tok/s  avg TTFT 1616 ms
-[4/5] mistral:latest      .....  2m 48s  — avg 11.7 tok/s  avg TTFT 1835 ms
-[5/5] phi:latest          .....  27.6s  — avg 104.1 tok/s  avg TTFT 814 ms
 
 =======================================================================================
 COMPARISON SUMMARY
@@ -64,6 +58,27 @@ mistral:latest           11.7         8.8        21.9     1835 ms           100.
 qwen3:30b-a3b             8.1         7.3         9.4      42.6 s            27.9     5
 qwen2.5-coder:14b         3.2         2.5         6.0     4840 ms            66.4     5
 ---------------------------------------------------------------------------------------
+```
+
+My MacBook Pro M1 32 GB
+```
+OS          : Darwin 25.5.0
+CPU         : Apple M1 Pro (10 threads)
+RAM         : 32.0 GB
+GPU         : Apple M1 Pro
+
+==========================================================================================
+COMPARISON SUMMARY
+==========================================================================================
+Model                  Avg tok/s   Min tok/s   Max tok/s    Avg TTFT   Prefill tok/s  Runs
+------------------------------------------------------------------------------------------
+phi:latest                  83.3        75.0       106.8      308 ms           829.4     5
+qwen3:30b-a3b               41.2        40.9        41.5      10.2 s           113.2     5
+mistral:latest              32.2        26.6        54.1      682 ms           180.9     5
+qwen2.5-coder:latest        32.2        26.8        53.2      956 ms           239.6     5
+granite3.3:latest           24.6        23.1        29.8      926 ms           256.0     5
+qwen2.5-coder:14b           16.2        13.3        27.0     1482 ms           124.1     5
+------------------------------------------------------------------------------------------
 ```
 
 ### Notes on these results
