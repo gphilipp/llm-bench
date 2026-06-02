@@ -35,6 +35,20 @@ def _total_ram() -> str:
         r = subprocess.run(["sysctl", "-n", "hw.memsize"], capture_output=True, text=True)
         if r.returncode == 0:
             return f"{int(r.stdout.strip()) / 1024**3:.1f} GB"
+    # WSL2: /proc/meminfo only reflects the WSL allocation; query Windows for physical total
+    try:
+        with open("/proc/version") as f:
+            if "microsoft" in f.read().lower():
+                ps = shutil.which("powershell.exe") or "/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe"
+                r = subprocess.run(
+                    [ps, "-NoProfile", "-Command",
+                     "(Get-WmiObject Win32_ComputerSystem).TotalPhysicalMemory"],
+                    capture_output=True, text=True, timeout=5,
+                )
+                if r.returncode == 0 and r.stdout.strip().isdigit():
+                    return f"{int(r.stdout.strip()) / 1024**3:.1f} GB"
+    except OSError:
+        pass
     try:
         with open("/proc/meminfo") as f:
             for line in f:
