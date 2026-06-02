@@ -40,7 +40,7 @@ python3 benchmark.py --host http://192.168.1.10:11434
 ```
 OS          : Linux 6.6.87.2-microsoft-standard-WSL2
 CPU         : Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz (12 threads)
-RAM         : 31.3 GB
+RAM         : 63.9 GB
 GPU         : NVIDIA GeForce RTX 2070 (8.0 GB)
 
 Ollama host : http://172.26.112.1:11434
@@ -114,7 +114,7 @@ qwen2.5-coder:14b         3.2         2.3         6.6      10.4 s            72.
 
 ### Notes on these results
 
-Machine: **Intel i7-9750H / 32 GB RAM / RTX 2070 8 GB VRAM** running Ollama on Windows, benchmarked from WSL2.
+Machine: **Intel i7-9750H / 64 GB RAM / RTX 2070 8 GB VRAM** running Ollama on Windows, benchmarked from WSL2.
 
 - **phi:latest** (3B) runs fully on GPU → very fast generation (70–86 tok/s), but the `short` prompt has a high TTFT (32 s) because it's the first run and the model is loading cold.
 - **qwen2.5-coder:7b** fits in VRAM → consistent ~9 tok/s generation and sub-second TTFT after the cold start.
