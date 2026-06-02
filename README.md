@@ -40,45 +40,38 @@ python3 benchmark.py --host http://192.168.1.10:11434
 
 ## Sample output
 
+My old but trusty Zotac EN72070, beefed up with 64GB:
 ```
 OS          : Linux 6.6.87.2-microsoft-standard-WSL2
 CPU         : Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz (12 threads)
 RAM         : 63.9 GB
 GPU         : NVIDIA GeForce RTX 2070 (8.0 GB)
 
-Ollama host : http://172.26.112.1:11434
-Models      : qwen3:30b-a3b, qwen2.5-coder:14b, qwen2.5-coder:7b, mistral:latest, phi:latest
-Prompts     : short, medium, long, reasoning, code
-Max tokens  : 512
-Total runs  : 25
-
-[1/5] qwen3:30b-a3b  .....  5m 23s  — avg 6.5 tok/s  avg TTFT 61.7 s
-[2/5] qwen2.5-coder:14b  .....  3m 41s  — avg 3.2 tok/s  avg TTFT 10.4 s
-[3/5] qwen2.5-coder:7b  .....  2m 18s  — avg 12.2 tok/s  avg TTFT 2579 ms
-[4/5] mistral:latest  .....  2m 07s  — avg 10.4 tok/s  avg TTFT 9686 ms
-[5/5] phi:latest  .....  0m 38s  — avg 70.8 tok/s  avg TTFT 6559 ms
+[1/5] qwen3:30b-a3b       .....  4m 47s  — avg 8.1 tok/s  avg TTFT 42.6 s
+[2/5] qwen2.5-coder:14b   .....  10m 03s  — avg 3.2 tok/s  avg TTFT 4840 ms
+[3/5] qwen2.5-coder:7b    .....  2m 34s  — avg 12.6 tok/s  avg TTFT 1616 ms
+[4/5] mistral:latest      .....  2m 48s  — avg 11.7 tok/s  avg TTFT 1835 ms
+[5/5] phi:latest          .....  27.6s  — avg 104.1 tok/s  avg TTFT 814 ms
 
 =======================================================================================
 COMPARISON SUMMARY
 =======================================================================================
 Model               Avg tok/s   Min tok/s   Max tok/s    Avg TTFT   Prefill tok/s  Runs
 ---------------------------------------------------------------------------------------
-phi:latest               70.8        26.1        86.0     6559 ms          2473.2     5
-qwen2.5-coder:7b         12.2         8.6        25.1     2579 ms           246.1     5
-mistral:latest           10.4         7.7        20.2     9686 ms            96.4     5
-qwen3:30b-a3b             6.5         5.4         7.9      61.7 s            24.3     5
-qwen2.5-coder:14b         3.2         2.3         6.6      10.4 s            72.8     5
+phi:latest              104.1        88.2       153.4      814 ms          2834.6     5
+qwen2.5-coder:7b         12.6         8.9        26.1     1616 ms           225.7     5
+mistral:latest           11.7         8.8        21.9     1835 ms           100.1     5
+qwen3:30b-a3b             8.1         7.3         9.4      42.6 s            27.9     5
+qwen2.5-coder:14b         3.2         2.5         6.0     4840 ms            66.4     5
 ---------------------------------------------------------------------------------------
 ```
 
 ### Notes on these results
 
-Machine: **Intel i7-9750H / 64 GB RAM / RTX 2070 8 GB VRAM** running Ollama on Windows, benchmarked from WSL2.
-
-- **phi:latest** (3B) runs fully on GPU → very fast generation (70–86 tok/s), but the `short` prompt has a high TTFT (32 s) because it's the first run and the model is loading cold.
-- **qwen2.5-coder:7b** fits in VRAM → consistent ~9 tok/s generation and sub-second TTFT after the cold start.
-- **qwen3:30b-a3b** and **qwen2.5-coder:14b** exceed 8 GB VRAM and spill to CPU RAM → low generation speed and high TTFT. The first prompt per model always includes model-load time.
-- High `short` TTFTs across the board (10–45 s) are the model cold-start; subsequent prompts on the same model are much faster.
+- **phi:latest** (3B) fits fully in VRAM → 104 tok/s avg, peaking at 153 tok/s.
+- **qwen2.5-coder:7b** and **mistral:latest** (7B) both fit in VRAM → consistent ~12 tok/s with sub-2s TTFT.
+- **qwen3:30b-a3b** (18.6 GB) and **qwen2.5-coder:14b** (9 GB) exceed VRAM and spill to CPU RAM → low generation speed and high TTFT.
+- The first prompt per model includes cold model-load time; subsequent prompts on the same model are faster.
 
 ## Prompts
 
